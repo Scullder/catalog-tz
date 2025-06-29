@@ -11,8 +11,7 @@
                             <div class="bg-white p-6 rounded-lg shadow-md" data-product-id="{{ $product->id }}">
                                 <h3 class="text-xl font-bold">{{ $product->name }}</h3>
                                 <p class="text-gray-600 mt-2">{{ $product->description }}</p>
-                                <p class="text-blue-600 font-bold mt-2">{{ number_format($product->price, 0, ',', ' ') }} ₽
-                                </p>
+                                <p class="text-blue-600 font-bold mt-2">@priceFormat($product->price)</p>
 
                                 <div class="flex items-center mt-4">
                                     <button onclick="Cart.changeQuantity({{ $product->id }}, -1)"

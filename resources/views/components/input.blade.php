@@ -7,11 +7,16 @@
     'placeholder' => '',
     'helper' => null,
     'class' => '',
+    'id' => null,
 ])
+
+@php
+    $generatedId = $id ?? 'input-' . md5($name . microtime());
+@endphp
 
 <div class="{{ $class }}">
     @if ($label)
-        <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 mb-1">
+        <label for="{{ $generatedId }}" class="block text-sm font-medium text-gray-700 mb-1">
             {{ $label }}
             @if ($required)
                 <span class="text-red-500">*</span>
@@ -19,7 +24,7 @@
         </label>
     @endif
 
-    <input type="{{ $type }}" id="{{ $name }}" name="{{ $name }}" value="{{ old($name, $value) }}"
+    <input type="{{ $type }}" id="{{ $generatedId }}" name="{{ $name }}" value="{{ old($name, $value) }}"
         @if ($placeholder) placeholder="{{ $placeholder }}" @endif
         @if ($required) required @endif
         {{ $attributes->merge(['class' => 'w-full p-1 rounded border |focus:outline-blue-500 outline-none sm:text-sm']) }}>

@@ -7,13 +7,12 @@
         @if (empty($products))
             <div class="bg-white p-6 rounded-lg shadow-md text-center">
                 <p class="text-gray-600 mb-4">Ваша корзина пуста</p>
-                <a href="{{ route('products.index') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                <a href="{{ route('catalog.index') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                     Вернуться к покупкам
                 </a>
             </div>
         @else
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Список товаров -->
                 <div class="lg:col-span-2">
                     <div class="bg-white rounded-lg shadow-md overflow-hidden">
                         <table class="w-full">
@@ -29,24 +28,17 @@
                             <tbody>
                                 @foreach ($products as $item)
                                     <tr class="border-b" data-product-id="{{ $item['product']->id }}">
-                                        <td class="px-6 py-4">
-                                            <div class="flex items-center">
-                                                @if ($item['product']->image)
-                                                    <img src="{{ asset('storage/' . $item['product']->image) }}"
-                                                        alt="{{ $item['product']->name }}"
-                                                        class="w-16 h-16 object-cover rounded mr-4">
-                                                @endif
-                                                <div>
-                                                    <h3 class="font-medium">{{ $item['product']->name }}</h3>
-                                                    <p class="text-gray-500 text-sm">{{ $item['product']->category->name }}
-                                                    </p>
-                                                </div>
+                                        <td class="p-6">
+                                            <div class="">
+                                                <h3 class="font-medium">{{ $item['product']->name }}</h3>
+                                                <p class="text-gray-500 text-sm">{{ $item['product']->category->name }}
+                                                </p>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4">{{ number_format($item['price'], 0, ',', ' ') }} ₽</td>
-                                        <td class="px-6 py-4">
+                                        <td class="p-6">@priceFormat ($item['price'])</td>
+                                        <td class="p-6">
                                             <div class="flex items-center">
-                                                <button onclick="changeQuantity({{ $item['product']->id }}, -1, 'cart')"
+                                                <button onclick="Cart.changeQuantity({{ $item['product']->id }}, -1)"
                                                     class="bg-gray-200 text-gray-800 px-3 py-1 rounded-l hover:bg-gray-300">
                                                     −
                                                 </button>
@@ -54,15 +46,15 @@
                                                     class="bg-gray-100 px-4 py-1 text-center">
                                                     {{ $item['quantity'] }}
                                                 </span>
-                                                <button onclick="changeQuantity({{ $item['product']->id }}, 1, 'cart')"
+                                                <button onclick="Cart.changeQuantity({{ $item['product']->id }}, 1)"
                                                     class="bg-gray-200 text-gray-800 px-3 py-1 rounded-r hover:bg-gray-300">
                                                     +
                                                 </button>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4">{{ number_format($item['total'], 0, ',', ' ') }} ₽</td>
-                                        <td class="px-6 py-4">
-                                            <button onclick="removeFromCart({{ $item['product']->id }})"
+                                        <td class="p-6">{{ $item['product_total_label'] }}</td>
+                                        <td class="p-6">
+                                            <button onclick="Cart.removeFromCart({{ $item['product']->id }})"
                                                 class="text-red-500 hover:text-red-700">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                                     viewBox="0 0 24 24" stroke="currentColor">
@@ -78,50 +70,33 @@
                     </div>
                 </div>
 
-                <!-- Форма оформления -->
-                <div>
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold mb-4">Оформление заказа</h2>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4">Оформление заказа</h2>
 
-                        <div class="mb-6">
-                            <div class="flex justify-between mb-2">
-                                <span>Товары ({{ count($products) }})</span>
-                                <span>{{ number_format($total, 0, ',', ' ') }} ₽</span>
-                            </div>
-                            <div class="flex justify-between font-bold text-lg">
-                                <span>Итого</span>
-                                <span>{{ number_format($total, 0, ',', ' ') }} ₽</span>
-                            </div>
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <span>Товары ({{ count($products) }})</span>
+                            <span id="cart-subtotal">{{ $total }}</span>
                         </div>
-
-                        <form action="{{ route('cart.checkout') }}" method="POST">
-                            @csrf
-
-                            <div class="mb-4">
-                                <label for="customer_name" class="block text-gray-700 mb-2">ФИО *</label>
-                                <input type="text" name="customer_name" id="customer_name"
-                                    class="w-full px-3 py-2 border rounded"
-                                    value="{{ auth()->user()->name ?? old('customer_name') }}" required>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="customer_email" class="block text-gray-700 mb-2">Email *</label>
-                                <input type="email" name="customer_email" id="customer_email"
-                                    class="w-full px-3 py-2 border rounded"
-                                    value="{{ auth()->user()->email ?? old('customer_email') }}" required>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="comment" class="block text-gray-700 mb-2">Комментарий к заказу</label>
-                                <textarea name="comment" id="comment" rows="3" class="w-full px-3 py-2 border rounded">{{ old('comment') }}</textarea>
-                            </div>
-
-                            <button type="submit"
-                                class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition">
-                                Оформить заказ
-                            </button>
-                        </form>
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Итого</span>
+                            <span id="cart-total">{{ $total }}</span>
+                        </div>
                     </div>
+
+                    <form action="{{ route('cart.checkout') }}" method="POST">
+                        @csrf
+                        <x-input name="customer_name" value="{{ auth()->user()?->name }}" label="ФИО" 
+                            class="mb-4" />
+                        <x-input name="customer_email" value="{{ auth()->user()?->email }}" label="Email" type="email"
+                             class="mb-4" />
+                        <x-textarea name="comment" label="Комментарий к заказу" value="" class="mb-4" />
+
+                        <button type="submit"
+                            class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition">
+                            Оформить заказ
+                        </button>
+                    </form>
                 </div>
             </div>
         @endif

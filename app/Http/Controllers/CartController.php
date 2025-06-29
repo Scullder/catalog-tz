@@ -17,43 +17,73 @@ class CartController extends Controller
         foreach ($cart as $productId => $item) {
             $product = Product::find($productId);
             if ($product) {
+                $productTotal = $product->price * $item['quantity'];
                 $products[] = [
                     'id' => $productId,
                     'product' => $product,
                     'quantity' => $item['quantity'],
                     'price' => $product->price,
-                    'total' => $product->price * $item['quantity']
+                    'product_total' => $productTotal,
+                    'product_total_label' => $this->formatPrice($productTotal),
                 ];
                 $total += $product->price * $item['quantity'];
             }
         }
 
+        $total = $this->formatPrice($total);
+
         return view('cart.index', compact('products', 'total'));
     }
 
-    public function add(Request $request, Product $product)
+    public function update(Request $request, Product $product)
     {
-        // $product = Product::findOrFail($productId);
         $cart = session()->get('cart', []);
+        $quantity = $request->input('quantity', 1);
 
         if (isset($cart[$product->id])) {
-            $cart[$product->id]['quantity'] = $request->input('quantity', 1);
+            $cart[$product->id]['quantity'] = $quantity;
+            $cart[$product->id] = array_merge($cart[$product->id], [
+                'quantity' => $quantity,
+                'product_total' => $product->price * $quantity
+            ]);
         } else {
             $cart[$product->id] = [
-                'quantity' => $request->input('quantity', 1),
+                'quantity' => $quantity,
                 'name' => $product->name,
-                // 'price' => $product->price
+                'price' => $product->price,
+                'product_total' => $product->price * $quantity
             ];
         }
 
-        session()->put('cart', $cart);
+        $cart[$product->id]['product_total_label'] = $this->formatPrice($cart[$product->id]['product_total']);
 
-        // return redirect()->back()->with('success', 'Товар добавлен в корзину');
+        session()->put('cart', $cart);
 
         return response()->json([
             'success' => true,
-            'cartCount' => count($cart)
+            'cartCount' => count($cart),
+            'total' => $this->formatPrice($this->getCartTotal($cart)),
+            'product' => $cart[$product->id],
         ]);
+    }
+
+    private function getCartTotal(array $cart)
+    {
+        $total = 0;
+
+        foreach ($cart as $productId => $item) {
+            $product = Product::find($productId);
+            if ($product) {
+                $total += $product->price * $item['quantity'];
+            }
+        }
+ 
+        return $total;
+    }
+
+    private function formatPrice(float $price)
+    {
+        return number_format($price, 0, ',', ' ') . ' ₽';
     }
 
     public function remove(Product $product)
@@ -65,11 +95,10 @@ class CartController extends Controller
             session()->put('cart', $cart);
         }
 
-        // return redirect()->back()->with('success', 'Товар удалён из корзины');
-
         return response()->json([
             'success' => true,
-            'cartCount' => count($cart)
+            'cartCount' => count($cart),
+            'total' => $this->formatPrice($this->getCartTotal($cart)),
         ]);
     }
 
@@ -86,11 +115,7 @@ class CartController extends Controller
             return redirect()->back()->with('error', 'Корзина пуста');
         }
 
-        $total = 0;
-        foreach ($cart as $productId => $item) {
-            $product = Product::find($productId);
-            $total += $product->price * $item['quantity'];
-        }
+        $total = $this->getCartTotal($cart);
 
         $orderData = [
             'customer_name' => $request->input('customer_name'),
@@ -113,7 +138,7 @@ class CartController extends Controller
 
         session()->forget('cart');
 
-        return redirect()->route('orders.show', $order)
+        return redirect()->route('catalog.index', $order)
             ->with('success', 'Заказ успешно оформлен!');
     }
 }

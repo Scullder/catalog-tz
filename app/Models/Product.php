@@ -8,8 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = ['name', 'category_id', 'description', 'price'];
+
+    protected $casts = [
+        'price' => 'float',
+    ];
 
     public function category()
     {
@@ -24,7 +28,7 @@ class Product extends Model
     public function inCart(): bool
     {
         $cart = session()->get('cart', []);
-        
+
         return isset($cart[$this->id]);
     }
 
@@ -37,5 +41,5 @@ class Product extends Model
         $cart = session()->get('cart', []);
 
         return $cart[$this->id]['quantity'] ?? 0;
-    } 
+    }
 }
